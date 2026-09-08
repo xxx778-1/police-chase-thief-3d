@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>警察抓小偷 3D - 直播弹幕互动游戏</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+</head>
+<body>
+  <!-- 加载界面 -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+    <h1>警察抓小偷 3D</h1>
+    <p>正在加载城市地图...</p>
+  </div>
+
+  <!-- 阵营选择界面 -->
+  <div id="team-select" class="overlay hidden">
+    <div class="panel">
+      <h1>选择你的阵营</h1>
+      <p class="subtitle">加入实时 3D 追逐对战</p>
+      <div class="team-buttons">
+        <button id="join-police" class="team-btn police">
+          <span class="icon">👮</span>
+          <span class="label">加入警察</span>
+          <span class="desc">追捕小偷，维护正义</span>
+        </button>
+        <button id="join-thief" class="team-btn thief">
+          <span class="icon">🦹</span>
+          <span class="label">加入小偷</span>
+          <span class="desc">躲避追捕，生存到最后</span>
+        </button>
+      </div>
+      <div class="name-input">
+        <input type="text" id="player-name" placeholder="输入你的昵称" maxlength="12">
+      </div>
+      <div id="connection-status" class="status">正在连接服务器...</div>
+    </div>
+  </div>
+
+  <!-- 游戏 HUD -->
+  <div id="game-ui" class="hidden">
+    <!-- 顶部状态栏 -->
+    <div class="top-bar">
+      <div class="team-info police">
+        <div class="team-name">👮 警察</div>
+        <div class="stats">
+          <span id="police-count">0</span> 人
+          <span class="score" id="police-score">0</span> 分
+        </div>
+      </div>
+      <div class="timer-box">
+        <div class="timer" id="timer">03:00</div>
+        <div class="status-text" id="game-status">等待开始</div>
+      </div>
+      <div class="team-info thief">
+        <div class="team-name">🦹 小偷</div>
+        <div class="stats">
+          <span id="thief-count">0</span> 人
+          <span class="score" id="thief-score">0</span> 分
+        </div>
+      </div>
+    </div>
+
+    <!-- 左侧道具栏 -->
+    <div class="props-panel" id="props-panel">
+      <h3>道具栏</h3>
+      <div class="props-list" id="props-list">
+        <!-- 动态生成 -->
+      </div>
+    </div>
+
+    <!-- 右侧直播弹幕区 -->
+    <div class="chat-panel">
+      <h3>直播间弹幕</h3>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="chat-input" placeholder="发送弹幕互动..." maxlength="30">
+        <button id="send-chat">发送</button>
+      </div>
+    </div>
+
+    <!-- 底部操作提示 -->
+    <div class="controls-hint">
+      <span>WASD / 方向键移动</span>
+      <span>鼠标拖动旋转视角</span>
+      <span>数字键 1-3 使用道具</span>
+    </div>
+
+    <!-- 胜负提示 -->
+    <div id="winner-banner" class="winner-banner hidden">
+      <h2 id="winner-text">警察阵营获胜！</h2>
+      <button id="reset-game">再来一局</button>
+    </div>
+  </div>
+
+  <!-- 3D 画布 -->
+  <canvas id="game-canvas"></canvas>
+
+  <script src="js/game.js"></script>
+</body>
+</html>

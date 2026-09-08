@@ -1,0 +1,534 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: #0a0e17;
+  color: #fff;
+  overflow: hidden;
+  user-select: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#game-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* 加载界面 */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0a0e17 0%, #1a2332 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.5s;
+}
+
+.loader {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255,255,255,0.1);
+  border-top-color: #00d4ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 24px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#loading-screen h1 {
+  font-size: 42px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, #00d4ff, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#loading-screen p {
+  color: #8b9bb4;
+  font-size: 16px;
+}
+
+/* 覆盖层 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 14, 23, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.panel {
+  background: linear-gradient(145deg, rgba(26, 35, 50, 0.95), rgba(15, 20, 30, 0.98));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 24px;
+  padding: 48px 56px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0, 212, 255, 0.1);
+  max-width: 520px;
+  width: 90%;
+}
+
+.panel h1 {
+  font-size: 36px;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, #00d4ff, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: #8b9bb4;
+  margin-bottom: 32px;
+  font-size: 16px;
+}
+
+.team-buttons {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.team-btn {
+  flex: 1;
+  padding: 28px 20px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.05);
+}
+
+.team-btn.police {
+  border-color: rgba(0, 150, 255, 0.4);
+}
+
+.team-btn.police:hover {
+  background: rgba(0, 150, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 150, 255, 0.25);
+}
+
+.team-btn.thief {
+  border-color: rgba(255, 80, 80, 0.4);
+}
+
+.team-btn.thief:hover {
+  background: rgba(255, 80, 80, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(255, 80, 80, 0.25);
+}
+
+.team-btn .icon {
+  font-size: 42px;
+}
+
+.team-btn .label {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.team-btn .desc {
+  font-size: 12px;
+  color: #8b9bb4;
+}
+
+.name-input input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 16px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.name-input input:focus {
+  border-color: #00d4ff;
+}
+
+.status {
+  margin-top: 18px;
+  font-size: 14px;
+  color: #8b9bb4;
+}
+
+.status.connected {
+  color: #4ade80;
+}
+
+.status.error {
+  color: #ff6b6b;
+}
+
+/* 游戏 UI */
+#game-ui {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#game-ui > * {
+  pointer-events: auto;
+}
+
+.top-bar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: rgba(10, 14, 23, 0.85);
+  border-radius: 16px;
+  padding: 14px 28px;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.team-info {
+  text-align: center;
+  min-width: 110px;
+}
+
+.team-info.police .team-name {
+  color: #4dabf7;
+}
+
+.team-info.thief .team-name {
+  color: #ff8787;
+}
+
+.team-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.stats {
+  font-size: 14px;
+  color: #8b9bb4;
+}
+
+.stats .score {
+  margin-left: 10px;
+  color: #ffd43b;
+  font-weight: bold;
+}
+
+.timer-box {
+  text-align: center;
+  min-width: 100px;
+}
+
+.timer {
+  font-size: 32px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+
+.status-text {
+  font-size: 12px;
+  color: #8b9bb4;
+  margin-top: 2px;
+}
+
+/* 道具栏 */
+.props-panel {
+  position: fixed;
+  left: 20px;
+  bottom: 90px;
+  width: 180px;
+  background: rgba(10, 14, 23, 0.85);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.props-panel h3 {
+  font-size: 14px;
+  color: #8b9bb4;
+  margin-bottom: 12px;
+}
+
+.props-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.prop-item:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(0, 212, 255, 0.4);
+}
+
+.prop-item.cooldown {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prop-icon {
+  font-size: 24px;
+  width: 32px;
+  text-align: center;
+}
+
+.prop-info {
+  flex: 1;
+}
+
+.prop-name {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.prop-key {
+  font-size: 11px;
+  color: #8b9bb4;
+}
+
+.prop-cooldown {
+  font-size: 12px;
+  color: #ff6b6b;
+  min-width: 24px;
+  text-align: right;
+}
+
+/* 弹幕区 */
+.chat-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  width: 280px;
+  height: 320px;
+  background: rgba(10, 14, 23, 0.85);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-panel h3 {
+  font-size: 14px;
+  color: #8b9bb4;
+  margin-bottom: 12px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-right: 4px;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+}
+
+.chat-message {
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-all;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+}
+
+.chat-message.system {
+  color: #ffd43b;
+  background: rgba(255, 212, 59, 0.08);
+}
+
+.chat-message.police {
+  color: #4dabf7;
+}
+
+.chat-message.thief {
+  color: #ff8787;
+}
+
+.chat-message.join {
+  color: #69db7c;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+
+.chat-input button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #00d4ff;
+  color: #0a0e17;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-input button:hover {
+  background: #4ce0ff;
+}
+
+/* 操作提示 */
+.controls-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 24px;
+  background: rgba(10, 14, 23, 0.7);
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #8b9bb4;
+  backdrop-filter: blur(8px);
+}
+
+/* 胜负横幅 */
+.winner-banner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 14, 23, 0.95);
+  border: 2px solid rgba(0, 212, 255, 0.5);
+  border-radius: 24px;
+  padding: 48px 64px;
+  text-align: center;
+  z-index: 200;
+  box-shadow: 0 0 60px rgba(0, 212, 255, 0.3);
+}
+
+.winner-banner h2 {
+  font-size: 42px;
+  margin-bottom: 24px;
+  background: linear-gradient(90deg, #ffd43b, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.winner-banner button {
+  padding: 14px 36px;
+  font-size: 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #00d4ff, #0096ff);
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.winner-banner button:hover {
+  transform: scale(1.05);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .top-bar {
+    top: 10px;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+  
+  .team-name {
+    font-size: 14px;
+  }
+  
+  .timer {
+    font-size: 24px;
+  }
+  
+  .props-panel {
+    left: 10px;
+    bottom: 80px;
+    width: 150px;
+    padding: 12px;
+  }
+  
+  .chat-panel {
+    right: 10px;
+    bottom: 80px;
+    width: 200px;
+    height: 240px;
+  }
+  
+  .controls-hint {
+    display: none;
+  }
+}
