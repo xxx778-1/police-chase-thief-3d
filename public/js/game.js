@@ -220,13 +220,36 @@ function createPlayerMesh(player) {
   const group = new THREE.Group();
   const color = player.team === 'police' ? CONFIG.colors.police : CONFIG.colors.thief;
 
-  // 身体
-  const bodyGeo = new THREE.CapsuleGeometry(1.2, 2.5, 4, 8);
+  // 身体（用圆柱 + 半球组合，兼容 Three.js r128）
+  const bodyGroup = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 2.2;
-  body.castShadow = true;
-  group.add(body);
+  
+  // 躯干圆柱
+  const torsoGeo = new THREE.CylinderGeometry(1.2, 1.2, 2.5, 16);
+  const torso = new THREE.Mesh(torsoGeo, bodyMat);
+  torso.castShadow = true;
+  bodyGroup.add(torso);
+  
+  // 顶部半球
+  const topSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    bodyMat
+  );
+  topSphere.position.y = 1.25;
+  topSphere.castShadow = true;
+  bodyGroup.add(topSphere);
+  
+  // 底部半球
+  const bottomSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    bodyMat
+  );
+  bottomSphere.position.y = -1.25;
+  bottomSphere.castShadow = true;
+  bodyGroup.add(bottomSphere);
+  
+  bodyGroup.position.y = 2.2;
+  group.add(bodyGroup);
 
   // 头部
   const headGeo = new THREE.SphereGeometry(0.9, 16, 16);
@@ -294,7 +317,10 @@ function updatePlayerMesh(id, player) {
 
   // 伪装效果
   if (player.team === 'thief' && player.disguiseActive) {
-    mesh.children[0].material.color.setHex(CONFIG.colors.police);
+    const bodyGroup = mesh.children[0];
+    bodyGroup.children.forEach(child => {
+      if (child.material) child.material.color.setHex(CONFIG.colors.police);
+    });
   }
 }
 
