@@ -82,8 +82,9 @@ function initThree() {
   camera.position.set(0, state.camera.height, state.camera.distance);
   camera.lookAt(0, 0, 0);
 
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -94,12 +95,12 @@ function initThree() {
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
   dirLight.position.set(50, 80, 50);
   dirLight.castShadow = true;
-  dirLight.shadow.camera.left = -70;
-  dirLight.shadow.camera.right = 70;
-  dirLight.shadow.camera.top = 70;
-  dirLight.shadow.camera.bottom = -70;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.camera.left = -65;
+  dirLight.shadow.camera.right = 65;
+  dirLight.shadow.camera.top = 65;
+  dirLight.shadow.camera.bottom = -65;
+  dirLight.shadow.mapSize.width = 1024;
+  dirLight.shadow.mapSize.height = 1024;
   scene.add(dirLight);
 
   // 地面
@@ -152,9 +153,8 @@ function createRoads() {
 function createBuildings() {
   const buildingColors = [0x2d3748, 0x364153, 0x1f2937, 0x374151];
   const positions = [
-    [-40, -40], [-20, -45], [25, -40], [45, -25],
-    [-45, 20], [-25, 40], [30, 30], [45, 45],
-    [-35, -10], [35, -10], [-10, 35], [15, -35]
+    [-40, -40], [25, -40], [-45, 20], [30, 30],
+    [-35, -10], [35, -10], [-10, 35]
   ];
 
   positions.forEach((pos, i) => {
@@ -171,18 +171,6 @@ function createBuildings() {
     building.receiveShadow = true;
     scene.add(building);
     buildings.push(building);
-
-    // 窗户发光
-    const windowsGeo = new THREE.BoxGeometry(width + 0.2, height * 0.6, depth + 0.2);
-    const windowsMat = new THREE.MeshBasicMaterial({
-      color: 0xffd43b,
-      transparent: true,
-      opacity: 0.15,
-      side: THREE.BackSide
-    });
-    const windows = new THREE.Mesh(windowsGeo, windowsMat);
-    windows.position.copy(building.position);
-    scene.add(windows);
   });
 }
 
@@ -225,14 +213,14 @@ function createPlayerMesh(player) {
   const bodyMat = new THREE.MeshLambertMaterial({ color });
   
   // 躯干圆柱
-  const torsoGeo = new THREE.CylinderGeometry(1.2, 1.2, 2.5, 16);
+  const torsoGeo = new THREE.CylinderGeometry(1.2, 1.2, 2.5, 10);
   const torso = new THREE.Mesh(torsoGeo, bodyMat);
   torso.castShadow = true;
   bodyGroup.add(torso);
   
   // 顶部半球
   const topSphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.SphereGeometry(1.2, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
     bodyMat
   );
   topSphere.position.y = 1.25;
@@ -241,7 +229,7 @@ function createPlayerMesh(player) {
   
   // 底部半球
   const bottomSphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    new THREE.SphereGeometry(1.2, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
     bodyMat
   );
   bottomSphere.position.y = -1.25;
@@ -252,7 +240,7 @@ function createPlayerMesh(player) {
   group.add(bodyGroup);
 
   // 头部
-  const headGeo = new THREE.SphereGeometry(0.9, 16, 16);
+  const headGeo = new THREE.SphereGeometry(0.9, 12, 10);
   const headMat = new THREE.MeshLambertMaterial({ color: 0xffdbac });
   const head = new THREE.Mesh(headGeo, headMat);
   head.position.y = 4.2;
@@ -260,7 +248,7 @@ function createPlayerMesh(player) {
   group.add(head);
 
   // 帽子/头带
-  const hatGeo = new THREE.CylinderGeometry(1, 1, 0.5, 16);
+  const hatGeo = new THREE.CylinderGeometry(1, 1, 0.5, 10);
   const hatMat = new THREE.MeshLambertMaterial({ color });
   const hat = new THREE.Mesh(hatGeo, hatMat);
   hat.position.y = player.team === 'police' ? 5 : 4.8;
@@ -268,7 +256,7 @@ function createPlayerMesh(player) {
 
   // 光环（己方玩家）
   if (player.id === state.playerId) {
-    const ringGeo = new THREE.RingGeometry(1.5, 2, 32);
+    const ringGeo = new THREE.RingGeometry(1.5, 2, 20);
     const ringMat = new THREE.MeshBasicMaterial({ 
       color: 0xffffff, 
       transparent: true, 
@@ -338,11 +326,11 @@ function createEffect(effect) {
 
   switch (effect.type) {
     case 'smoke':
-      const smokeGeo = new THREE.SphereGeometry(effect.range || 8, 16, 16);
+      const smokeGeo = new THREE.SphereGeometry(effect.range || 8, 10, 8);
       const smokeMat = new THREE.MeshBasicMaterial({ 
         color: 0x888888, 
         transparent: true, 
-        opacity: 0.4 
+        opacity: 0.35 
       });
       mesh = new THREE.Mesh(smokeGeo, smokeMat);
       mesh.position.set(effect.x, 3, effect.z);
@@ -356,7 +344,7 @@ function createEffect(effect) {
       break;
     
     case 'catch':
-      const catchGeo = new THREE.RingGeometry(0.5, 3, 32);
+      const catchGeo = new THREE.RingGeometry(0.5, 3, 20);
       const catchMat = new THREE.MeshBasicMaterial({ 
         color: 0xffd43b, 
         side: THREE.DoubleSide,
@@ -369,7 +357,7 @@ function createEffect(effect) {
       break;
     
     case 'sprint':
-      const sprintGeo = new THREE.RingGeometry(1, 2, 16);
+      const sprintGeo = new THREE.RingGeometry(1, 2, 12);
       const sprintMat = new THREE.MeshBasicMaterial({ 
         color: color, 
         side: THREE.DoubleSide,
@@ -382,7 +370,7 @@ function createEffect(effect) {
       break;
     
     default:
-      const defaultGeo = new THREE.SphereGeometry(2, 16, 16);
+      const defaultGeo = new THREE.SphereGeometry(2, 10, 8);
       const defaultMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5 });
       mesh = new THREE.Mesh(defaultGeo, defaultMat);
       mesh.position.set(effect.x, 2, effect.z);
@@ -770,7 +758,7 @@ function initOfflineMode() {
 function addAIPlayers() {
   const teams = ['police', 'thief'];
   teams.forEach(team => {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       const id = `ai_${team}_${i}`;
       const angle = Math.random() * Math.PI * 2;
       const dist = Math.random() * 40;
