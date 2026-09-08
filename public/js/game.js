@@ -475,13 +475,25 @@ function setupInputs() {
 }
 
 function getMovementInput() {
-  let dx = 0, dz = 0;
-  if (state.keys['w'] || state.keys['arrowup']) dz -= 1;
-  if (state.keys['s'] || state.keys['arrowdown']) dz += 1;
-  if (state.keys['a'] || state.keys['arrowleft']) dx -= 1;
-  if (state.keys['d'] || state.keys['arrowright']) dx += 1;
+  let forward = 0, right = 0;
+  if (state.keys['w'] || state.keys['arrowup']) forward += 1;
+  if (state.keys['s'] || state.keys['arrowdown']) forward -= 1;
+  if (state.keys['d'] || state.keys['arrowright']) right += 1;
+  if (state.keys['a'] || state.keys['arrowleft']) right -= 1;
   
-  // 归一化
+  // 根据摄像机角度计算世界坐标方向
+  // 摄像机朝向：forward = (-sin(angle), -cos(angle))
+  // 右向量：right_dir = (cos(angle), -sin(angle))
+  const angle = state.camera.angle;
+  const fx = -Math.sin(angle);
+  const fz = -Math.cos(angle);
+  const rx = Math.cos(angle);
+  const rz = -Math.sin(angle);
+  
+  let dx = forward * fx + right * rx;
+  let dz = forward * fz + right * rz;
+  
+  // 归一化（防止斜向移动速度过快）
   if (dx !== 0 || dz !== 0) {
     const len = Math.sqrt(dx * dx + dz * dz);
     dx /= len;
