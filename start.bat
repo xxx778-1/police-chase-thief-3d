@@ -5,11 +5,10 @@ echo    警察抓小偷 3D - 启动器
 echo ========================================
 echo.
 
-REM 设置项目目录为当前目录
 set "PROJECT_DIR=%~dp0"
 
 REM 检查 Node.js 是否安装（优先 PATH）
-node --version >nul 2>&1
+where node >nul 2>&1
 if %errorlevel% equ 0 (
     echo [Node.js 已找到]
     goto :run_server
