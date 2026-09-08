@@ -570,9 +570,20 @@ function simulateViewerMessages() {
 
 // ==================== 网络连接 ====================
 function initSocket() {
+  // 如果是本地文件协议，直接启用离线模式
+  if (window.location.protocol === 'file:') {
+    console.log('本地文件模式，直接启用离线演示');
+    setTimeout(initOfflineMode, 500);
+    return;
+  }
+
   // 尝试连接 Socket.io 服务器，如果失败则启用离线模式
   try {
-    state.socket = io();
+    state.socket = io({
+      transports: ['websocket', 'polling'],
+      timeout: 3000,
+      reconnectionAttempts: 2
+    });
     
     state.socket.on('connect', () => {
       dom.connectionStatus.textContent = '已连接服务器';
@@ -582,8 +593,7 @@ function initSocket() {
     state.socket.on('connect_error', () => {
       dom.connectionStatus.textContent = '服务器连接失败，将启用本地演示模式';
       dom.connectionStatus.className = 'status error';
-      // 5秒后自动切换到本地模式
-      setTimeout(initOfflineMode, 2000);
+      setTimeout(initOfflineMode, 1500);
     });
 
     state.socket.on('joined', (data) => {
@@ -607,6 +617,17 @@ function initSocket() {
     state.socket.on('errorMessage', (text) => {
       addChatMessage(text, 'system');
     });
+
+    // 3秒内没连上则自动离线
+    setTimeout(() => {
+      if (!state.socket || !state.socket.connected) {
+        if (!state.offlineMode) {
+          dom.connectionStatus.textContent = '连接超时，启用本地演示模式';
+          dom.connectionStatus.className = 'status error';
+          initOfflineMode();
+        }
+      }
+    }, 3500);
 
   } catch (e) {
     console.warn('Socket.io 不可用，启用离线模式');
