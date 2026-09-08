@@ -303,11 +303,12 @@ function updatePlayerMesh(id, player) {
   mesh.position.z = player.z;
   mesh.visible = player.alive;
 
-  // 伪装效果
-  if (player.team === 'thief' && player.disguiseActive) {
+  // 伪装效果：切换颜色
+  if (player.team === 'thief') {
     const bodyGroup = mesh.children[0];
+    const targetColor = player.disguiseActive ? CONFIG.colors.police : CONFIG.colors.thief;
     bodyGroup.children.forEach(child => {
-      if (child.material) child.material.color.setHex(CONFIG.colors.police);
+      if (child.material) child.material.color.setHex(targetColor);
     });
   }
 }
@@ -520,8 +521,170 @@ function usePropByIndex(index) {
 }
 
 function useProp(propId) {
-  if (!state.socket || !state.team) return;
-  state.socket.emit('useProp', { propId });
+  if (!state.team) return;
+  
+  // 在线模式：发送给服务器
+  if (state.socket) {
+    state.socket.emit('useProp', { propId });
+    return;
+  }
+  
+  // 离线模式：本地处理
+  if (state.offlineMode) {
+    useOfflineProp(propId);
+  }
+}
+
+function useOfflineProp(propId) {
+  const player = state.gameState.teams.police.players[state.playerId] || 
+                 state.gameState.teams.thief.players[state.playerId];
+  if (!player || !player.alive) return;
+  
+  const now = Date.now();
+  const cooldowns = player.cooldowns || {};
+  if (cooldowns[propId] && cooldowns[propId] > now) {
+    addChatMessage(`${CONFIG.props[player.team][propId].name} 冷却中...`, 'system');
+    return;
+  }
+  
+  const teamProps = CONFIG.props[player.team];
+  const prop = teamProps[propId];
+  if (!prop) return;
+  
+  // 设置冷却时间（单位：秒）
+  const cooldownsMap = {
+    handcuffs: 3, dog: 8, roadblock: 5,
+    smoke: 6, sprint: 5, disguise: 10
+  };
+  cooldowns[propId] = now + cooldownsMap[propId] * 1000;
+  player.cooldowns = cooldowns;
+  
+  // 执行道具效果
+  switch (propId) {
+    case 'handcuffs':
+      useHandcuffsOffline(player);
+      break;
+    case 'dog':
+      spawnPoliceDogOffline(player);
+      break;
+    case 'roadblock':
+      placeRoadblockOffline(player);
+      break;
+    case 'smoke':
+      useSmokeOffline(player);
+      break;
+    case 'sprint':
+      useSprintOffline(player);
+      break;
+    case 'disguise':
+      useDisguiseOffline(player);
+      break;
+  }
+  
+  addChatMessage(`使用了 ${prop.name}！`, player.team);
+}
+
+function useHandcuffsOffline(player) {
+  const enemies = Object.values(state.gameState.teams.thief.players)
+    .filter(p => p.alive && !p.caught && p.id !== player.id);
+  
+  let caught = false;
+  enemies.forEach(thief => {
+    const dist = Math.sqrt((player.x - thief.x)**2 + (player.z - thief.z)**2);
+    if (dist < 8) {
+      thief.caught = true;
+      thief.alive = false;
+      caught = true;
+      state.gameState.effects.push({
+        type: 'catch',
+        x: thief.x,
+        z: thief.z,
+        duration: 1.5,
+        team: 'police'
+      });
+      addChatMessage(`${player.name} 用手铐抓住了 ${thief.name}！`, 'police');
+    }
+  });
+  
+  if (!caught) {
+    addChatMessage('手铐：附近没有小偷', 'system');
+  }
+}
+
+function spawnPoliceDogOffline(player) {
+  // 召唤一只警犬追击最近的小偷
+  const thieves = Object.values(state.gameState.teams.thief.players)
+    .filter(p => p.alive && !p.caught);
+  
+  if (thieves.length === 0) {
+    addChatMessage('警犬：没有目标', 'system');
+    return;
+  }
+  
+  const target = thieves.reduce((nearest, p) => {
+    const dist = (player.x - p.x)**2 + (player.z - p.z)**2;
+    const nearestDist = (player.x - nearest.x)**2 + (player.z - nearest.z)**2;
+    return dist < nearestDist ? p : nearest;
+  });
+  
+  // 在目标位置生成抓捕特效，模拟警犬扑咬
+  state.gameState.effects.push({
+    type: 'catch',
+    x: target.x,
+    z: target.z,
+    duration: 2,
+    team: 'police'
+  });
+  
+  const dist = Math.sqrt((player.x - target.x)**2 + (player.z - target.z)**2);
+  if (dist < 25) {
+    target.caught = true;
+    target.alive = false;
+    addChatMessage(`${player.name} 的警犬抓住了 ${target.name}！`, 'police');
+  } else {
+    addChatMessage('警犬：目标太远了', 'system');
+  }
+}
+
+function placeRoadblockOffline(player) {
+  state.gameState.effects.push({
+    type: 'roadblock',
+    x: player.x,
+    z: player.z,
+    duration: 8,
+    team: 'police'
+  });
+  addChatMessage('路障已放置', 'police');
+}
+
+function useSmokeOffline(player) {
+  state.gameState.effects.push({
+    type: 'smoke',
+    x: player.x,
+    z: player.z,
+    duration: 5,
+    team: 'thief',
+    range: 8
+  });
+}
+
+function useSprintOffline(player) {
+  player.sprintEndTime = Date.now() + 3000;
+  state.gameState.effects.push({
+    type: 'sprint',
+    x: player.x,
+    z: player.z,
+    duration: 3,
+    team: 'thief'
+  });
+}
+
+function useDisguiseOffline(player) {
+  player.disguiseEndTime = Date.now() + 5000;
+  player.disguiseActive = true;
+  setTimeout(() => {
+    player.disguiseActive = false;
+  }, 5000);
 }
 
 function updateCooldowns() {
@@ -802,7 +965,8 @@ function localGameLoop() {
                    state.gameState.teams.thief.players[state.playerId];
     if (player && player.alive) {
       const { dx, dz } = getMovementInput();
-      const speed = state.keys['2'] && state.team === 'thief' ? 18 : 10;
+      const sprintBoost = (player.sprintEndTime && player.sprintEndTime > Date.now()) ? 1.8 : 1;
+      const speed = 10 * sprintBoost;
       player.x += dx * speed * 0.1;
       player.z += dz * speed * 0.1;
       // 边界
